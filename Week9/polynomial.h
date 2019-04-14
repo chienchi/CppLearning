@@ -5,10 +5,13 @@
 #ifndef LIVECODING2_POLYNOMIAL_H
 #define LIVECODING2_POLYNOMIAL_H
 #include <cassert>
+#include <map>
 #include "rational.h"
+
 using namespace std;
 
-template <typename T>
+// default type int
+template <typename T=int>
 class polynomial {
 // constructor giving the degree of the polynomial
 // A dynamic array/vectro/list of double to store the coefficiengs
@@ -19,92 +22,154 @@ public:
         if (coeffs.empty()){
             throw std::invalid_argument("coefficient need at least one ono zero int");
         }
-        Pcoeffs = coeffs;
-        simplify();
+        for (int i=0; i< coeffs.size(); ++i){
+            // need to skip when coeffs is zero
+            if (coeffs[i] !=  T())
+                pMap.insert({i,coeffs[i]});
+                // pMap[i]=coeffs[i];
+        }
     }
 
-    polynomial ();   // initalization of zero
+    // no need ref &pairs, no need const,  compiled time generation
+    polynomial(std::initializer_list<std::pair<int,T>> pairs){
+        for (auto i : pairs) {
+            if (pMap.find(i.first) != pMap.end()){
+                throw std::invalid_argument("duplicate degree");
+            }
+            pMap[i.first]=i.second;
+            // or use
+            //pMap.insert(i);
+        }
+    };
 
+    // delegate constructor
+    // (1)  initialized with one element of default value
+    // {1}  initialized with one element and the value is 1
+    polynomial(): polynomial(std::vector<T>(1)){}   // initalization of zero
 
-    //rational<int> rational;
+    polynomial(std::initializer_list<T> lst){
+        for (int i=0; i< lst.size(); ++i){
+            // skip coeff == zero
+            if (lst.begin()[i] !=  T())
+                pMap.insert({i,lst.begin()[i]});
+        }
+
+    };
+
+    polynomial(std::map<int,T> map){
+            for (auto const& [key,value] : map){
+                if (pMap.find(key) != pMap.end()){
+                    throw std::invalid_argument("duplicate degree");
+                }
+                if (value != T()) {
+                    pMap[key] = value;
+                }
+            }
+    }
+
 
     int get_deg() const{
-        return Pcoeffs.size();
+        return pMap.rbegin()->first;
     }
     const T get_coeff(int i) const{
-        assert( i >= 0 );
-        if (i >= Pcoeffs.size()){
+        if (pMap.find(i) == pMap.end()){
             return 0;
         }else{
-            return Pcoeffs[i];
+            return pMap.find(i)->second;
         }
     }
 
+    const std::map<int,T> get_all_coeff() const{
+        return pMap;
+    }
+
+// No need simplify with std::map
     void simplify() {
-        while( Pcoeffs[get_deg()-1] == T() ){
-            Pcoeffs.pop_back();
+        while( pMap.rbegin()->second == T()){
+            pMap.erase(pMap.rbegin()->first);
         }
     }
 
-    int power(int x , int n){
-        if (n != 0)
-            return (x*power(x, n-1));
-        else
-            return 1;;
-    }
-
-    T evaluate(T x){
-        T Total= 0 ;
+    // change to operator ()
+    template<typename T2>
+    T2 operator()(T2 x){
+        T2 Total = 0 ;
+       // for (auto const& [key,value] : this)){
+        //    Total = Total*x + value;
+        //}
         for (int i = this->get_deg(); i >= 0  ; --i)
         {
            // Total += (this->get_coeff(i) * power(x, i));
             // Horner's method
             //ex: 1 + 2x + 3x^2 = 1 + x(2+3x)
+
            Total = Total*x + this->get_coeff(i);
+            //cout << Total*x << " " << i << endl;
         }
         return Total;
     }
 
 private:
-    std::vector<T> Pcoeffs;
+    std::map<int, T> pMap;
 };
 
 
 template <typename T>
 polynomial<T> operator+(const polynomial<T> & a, const polynomial<T> & b){
-    std::vector <T> sum;
-
-    for(int i=0; i< max(a.get_deg(),b.get_deg()); ++i){
-        sum.push_back(a.get_coeff(i) + b.get_coeff(i));
+    // hint merge sort
+    std::map <int,T> sum = a.get_all_coeff();
+    for (auto const& [key,value] : b.get_all_coeff()){
+        // do we need find ???
+      //  if (sum.find(key) == sum.end()){
+       //     sum[key] = value;
+       // }else{
+            sum[key] = sum[key] + value;
+        //}
     }
     return sum;
 }
 
 template <typename T>
 polynomial<T> operator-(const polynomial<T> & a, const polynomial<T> & b){
-    std::vector<T> sub;
-
-    for (int i = 0; i < max(a.get_deg(),b.get_deg()); ++i) {
-        sub.push_back(a.get_coeff(i) - b.get_coeff(i));
+    std::map <int,T> sub = b.get_all_coeff();
+    for (auto const& [key,value] : a.get_all_coeff()){
+        if (sub.find(key) == sub.end()){
+            sub[key] = value;
+        }else{
+            if (value - sub[key] == T()){
+                sub.erase(key);
+            }else {
+                sub[key] = value - sub[key];
+            }
+        }
     }
     return sub;
 }
 
 template <typename T>
 polynomial<T> operator*(const polynomial<T> & a, const polynomial<T> & b){
-    std::vector<T> mul(a.get_deg() + b.get_deg());
-
-    for (int i = 0; i < a.get_deg(); ++i){
-        for (int j = 0; j < b.get_deg(); ++j){
-            mul[i + j] = mul[i + j] + (a.get_coeff(i) * b.get_coeff(j));
+    std::map <int,T> mul;
+    // hidden insertion.
+    for (auto const& [key_a,value_a] : a.get_all_coeff()){
+        for (auto const& [key_b,value_b] : b.get_all_coeff()){
+            mul[key_a + key_b] = mul[key_a + key_b] + (value_a * value_b);
         }
     }
+    /*
+    for (int i = 0; i <= a.get_deg(); ++i){
+        for (int j = 0; j <= b.get_deg(); ++j){
+            mul[i + j] = mul[i + j] + (a.get_coeff(i) * b.get_coeff(j));
+        }
+    }*/
     return mul;
 }
 
 template <typename T>
-polynomial<T> operator/(const polynomial<T> & a, const polynomial<T> & b){
-    return rational{a,b};
+//polynomial<T> operator/(const polynomial<T> & a, const polynomial<T> & b){
+// cannot convert rational<polynomial<rational<int>>>  to polynomial<rational<int>>
+rational<polynomial<T>> operator/(const polynomial<T> & a, const polynomial<T> & b){
+    //rational<polynomial<rational<int>>> rational;
+    return  rational{a,b};
 }
 
 template <typename T>
@@ -115,15 +180,7 @@ bool operator<(const polynomial<T> & a, const polynomial<T> & b);
 
 template <typename T>
 bool operator==(const polynomial<T> & a, const polynomial<T> &b){
-    if (a.get_deg() != b.get_deg()){
-        return false;
-    }
-    for (int i = 0; i < a.get_deg(); ++i){
-        if (a.get_coeff(i) != b.get_coeff(i)){
-            return false;
-        }
-    }
-    return true;
+    return a.get_all_coeff() == b.get_all_coeff();
 }
 
 template <typename T>
@@ -133,12 +190,12 @@ bool operator!=(const polynomial<T> & a, const polynomial<T> &b){
 
 template <typename T>
 ostream& operator<<(ostream& os, const polynomial<T> & a){
-    for (int i = 0; i < a.get_deg(); ++i){
-        os << a.get_coeff(i);
-        if ( i!=0 ){
-            os << "x^" << i ;
+    for (auto [key,value] : a.get_all_coeff()){
+        os << value;
+        if ( key != 0){
+            os << "x^" << key ;
         }
-        if (i != (a.get_deg() - 1)){
+        if ( key != a.get_deg()){
             os << " + " ;
         }
     }

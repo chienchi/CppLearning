@@ -2,8 +2,10 @@
 // Created by osboxes on 12/16/18.
 //
 
+
 #ifndef LIVECODING2_RATIONAL_H
 #define LIVECODING2_RATIONAL_H
+//#include "polynomial.h"
 #include <algorithm>
 
 using namespace std;
@@ -12,7 +14,7 @@ template <typename T>
 class rational {
 public:
     rational(T n, T d) : num(n) , den(d) {
-        if (den == T()) {
+        if (den == T{}) {
             throw std::invalid_argument("denominator should not be zero");
         }
         reduce();
@@ -41,6 +43,10 @@ public:
         return den;
     }
 
+    // Type conversion out
+    operator float() const{
+        return float(num)/float(den);
+    }
 
     rational inverse() const{
         if (num == T()) throw std::invalid_argument("Cannot inverse Zero");
@@ -71,6 +77,8 @@ bool operator>(const rational<T> & a, const rational<T> & b ){
 
 template <typename T>
 bool operator<=(const rational<T> & a, const rational<T> & b ){
+    // 1/3    1/-2
+    // how to enforce
     return a.get_num()*b.get_den()<=a.get_den()*b.get_num();
 }
 
@@ -112,5 +120,7 @@ ostream& operator<<( ostream& os, const rational<T> & a ){
         os << a.get_num() << "/" << a.get_den();
     }
 }
+
+//rational(polynomial) polynomial<rational<int>> operator/(const polynomial<rational<int>> & a, const polynomial<rational<int>> & b);
 
 #endif //LIVECODING2_RATIONAL_H
