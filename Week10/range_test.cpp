@@ -18,9 +18,27 @@ TEST_CASE("Range") {
  //   SECTION("Test input one number") {
 
   //  }
-    SECTION("Test function"){
-        Xrange(5).begin();
 
-        Xrange(5).end();
+    SECTION("Test square_range") {
+        for (long l : square_range(5)){
+            std::cout << l << ' ';
+        }
+        std::cout << '\n';
+        // 0 1 4 9 16
     }
+    SECTION("Test odd_range") {
+        for (long l : odd_range(0,10)){
+            std::cout << l << ' ';
+        }
+        std::cout << '\n';
+        // 1,3,5,7,9
+    }
+    SECTION("Test even range") {
+        for (long l : even_range(0,10)){
+            std::cout << l << ' ';
+        }
+        std::cout << '\n';
+        // 0 2 4 6 8
+    }
+
 }

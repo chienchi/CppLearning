@@ -62,6 +62,7 @@ public:
     Xrange(int e): _begin(0), _end(e), _step(1) {
        // assert(e>0);
     }
+    Xrange(): _begin(0), _end(1), _step(1){};
 
     Xrange_iterator begin(){
         return {_begin, _step};
@@ -71,6 +72,60 @@ public:
     }
 
 };
+
+template <typename F>
+class pipeable
+{
+private:
+    F f;
+public:
+    pipeable(F&& f) : f(std::forward<F>(f)) {}
+
+    template<class... Xs>
+    auto operator()(Xs&&... xs) -> decltype(std::bind(f, std::placeholders::_1, std::forward<Xs>(xs)...)) const {
+        return std::bind(f, std::placeholders::_1, std::forward<Xs>(xs)...);
+    }
+
+};
+
+template <typename F>
+pipeable<F> piped(F&& f) { return pipeable<F>{std::forward<F>(f)}; }
+
+template<typename T, typename F>
+auto operator|(T&& x, const F& f) -> decltype(f(std::forward<T>(x)))
+{
+    return f(std::forward<T>(x));
+}
+
+template<typename InputIt, typename UnaryOperation>
+auto transform_range(InputIt inRange,
+                        UnaryOperation unary_op)
+{
+    std::vector<int> output;
+    for (auto i : inRange){
+        output.push_back(unary_op(i++));
+    }
+    return output;
+}
+
+auto square_range(int i){
+    return transform_range(Xrange(i),[](int x){
+        return x * x;
+    });
+}
+
+auto odd_range(int i, int j){
+    return transform_range(Xrange(i/2,j/2),[](int x){
+        return x * 2 + 1;
+    });
+}
+
+auto even_range(int i, int j){
+    return transform_range(Xrange(i/2,j/2),[](int x){
+        return x * 2 ;
+    });
+}
+
 
 
 
