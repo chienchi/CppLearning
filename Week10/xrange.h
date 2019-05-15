@@ -5,6 +5,7 @@
 #ifndef LIVECODING_XRANGE_H
 #define LIVECODING_XRANGE_H
 
+#include <functional>
 #include <cassert>
 // Class Xrange ,
 //Constructor
@@ -72,40 +73,97 @@ public:
     }
 
 };
-
+/*
 template <typename F>
-class pipeable
-{
+struct pipeable{
 private:
     F f;
 public:
-    pipeable(F&& f) : f(std::forward<F>(f)) {}
+    pipeable(F&& f): f(std::forward<F>(f)){}
 
-    template<class... Xs>
-    auto operator()(Xs&&... xs) -> decltype(std::bind(f, std::placeholders::_1, std::forward<Xs>(xs)...)) const {
-        return std::bind(f, std::placeholders::_1, std::forward<Xs>(xs)...);
+    template<typename ...Xs>
+    auto operator()(Xs&& ...xs) -> decltype(std::bind(f,std::placeholders::_1,std::forward<Xs>(xs)...)) const {
+        return std::bind(f,std::placeholders::_1, std::forward<Xs>(xs)...);
     }
-
 };
 
 template <typename F>
-pipeable<F> piped(F&& f) { return pipeable<F>{std::forward<F>(f)}; }
+pipeable<F> piped(F&& f) {return pipeable<F>{std::forward<F>(f)};}
 
 template<typename T, typename F>
-auto operator|(T&& x, const F& f) -> decltype(f(std::forward<T>(x)))
-{
+auto operator|(T&& x, const F& f) -> decltype(f(std::forward<T>(x))){
     return f(std::forward<T>(x));
 }
+*/
 
+#if 0
 template<typename InputIt, typename UnaryOperation>
 auto transform_range(InputIt inRange,
                         UnaryOperation unary_op)
 {
+    // 1. change return type int some kind of Range
     std::vector<int> output;
+
+    // 2. move computation into iterator::operator*()
     for (auto i : inRange){
-        output.push_back(unary_op(i++));
+        output.push_back(unary_op(i));
     }
+
+    // 1.5 instead of return from function, construct an object
     return output;
+}
+
+#else
+template <typename Range, typename Fun>
+class transform_range {
+public:
+        transform_range(Range input_range, Fun f):range(input_range),fun(f){};
+
+        class iterator {
+
+        public:
+            iterator(int c): cc(c){};
+
+            bool operator!=( iterator right) {
+                return cc != right.cc;
+                //return right.cc > cc;
+            }
+
+            auto &operator++() {
+                cc += 1;
+                return *this;
+            }
+            auto operator*() {
+                return tr->fun(cc);
+            }
+
+        private:
+            int cc;
+            transform_range *tr;
+        };
+
+        iterator begin(){
+            return (*range.begin());
+        };
+
+        iterator end(){
+            return (*range.end());
+        };
+
+private:
+        Range range;
+        Fun fun;
+        };
+
+
+#endif
+
+// operator| ???
+// Q1: input, output type?
+// Q2: how many of operator|?
+template<typename T, typename F>
+auto operator|(T x, const F f) {
+    return transform_range(x, f);
 }
 
 auto square_range(int i){

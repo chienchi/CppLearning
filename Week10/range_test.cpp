@@ -10,6 +10,7 @@ using namespace std;
 
 TEST_CASE("Range") {
     SECTION("Construction") {
+
         for(long l : Xrange(100,10,-2)) {
             std::cout << l << ' '; // 0 1 2 3 4 5
         }
@@ -40,5 +41,29 @@ TEST_CASE("Range") {
         std::cout << '\n';
         // 0 2 4 6 8
     }
+    SECTION("Test cubic range") {
+        auto cubic = transform_range(Xrange(0,5), [](int i){
+            return i * i * i;
+        });
+        for (auto i : cubic){
+            std::cout << i << " ";
+        }
+        std::cout << std::endl;
+        // 0 1 8 27 64
+    }
+    SECTION("Test pipe transform") {
+
+        auto square = Xrange(0,5) | [](int i) {
+            return i * i;
+        } ;
+        for (auto i : square){
+            std::cout << i << " ";
+        }
+        std::cout << std::endl;
+        // 0 1 4 9 16
+    }
+
+
+
 
 }
