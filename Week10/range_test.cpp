@@ -52,11 +52,10 @@ TEST_CASE("Range") {
         // 0 1 8 27 64
     }
     SECTION("Test pipe transform") {
+        auto square = Xrange(0,5)|transform2( [](int i){return i * i; });
 
-        auto square = Xrange(0,5) | [](int i) {
-            return i * i;
-        } ;
-        for (auto i : square){
+
+        for (auto i : square | transform2( [](int i){return i * i; })){
             std::cout << i << " ";
         }
         std::cout << std::endl;

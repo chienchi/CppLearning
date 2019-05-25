@@ -31,7 +31,7 @@ class Xrange_iterator{
 public:
     Xrange_iterator(int c, int s): cc(c),step(s){}
 
-    bool operator != (Xrange_iterator right){
+    bool operator != (Xrange_iterator &right){
         return step<0 ? right.cc < cc : right.cc > cc;
         // this doesn't work if step skip over the _end
         //return cc != right.cc;
@@ -40,7 +40,7 @@ public:
         cc += step;
         return *this;
     }
-    int operator*(){
+    int operator*() const{
         return cc;
     }
 
@@ -65,28 +65,18 @@ public:
     }
     Xrange(): _begin(0), _end(1), _step(1){};
 
-    Xrange_iterator begin(){
+    Xrange_iterator begin() const{
         return {_begin, _step};
     }
-    Xrange_iterator end(){
+    Xrange_iterator end() const{
         return {_end, _step};
     }
 
 };
+
+
+
 /*
-template <typename F>
-struct pipeable{
-private:
-    F f;
-public:
-    pipeable(F&& f): f(std::forward<F>(f)){}
-
-    template<typename ...Xs>
-    auto operator()(Xs&& ...xs) -> decltype(std::bind(f,std::placeholders::_1,std::forward<Xs>(xs)...)) const {
-        return std::bind(f,std::placeholders::_1, std::forward<Xs>(xs)...);
-    }
-};
-
 template <typename F>
 pipeable<F> piped(F&& f) {return pipeable<F>{std::forward<F>(f)};}
 
@@ -119,35 +109,35 @@ class transform_range {
 public:
         transform_range(Range input_range, Fun f):range(input_range),fun(f){};
 
+        template <typename Iter>
         class iterator {
 
         public:
-            iterator(int c): cc(c){};
+            iterator(Iter iter): iter(iter){};
 
-            bool operator!=( iterator right) {
-                return cc != right.cc;
-                //return right.cc > cc;
+            bool operator!=( iterator &right) {
+                return iter != right.iter;
             }
 
-            auto &operator++() {
-                cc += 1;
+            iterator &operator++() {
+                ++iter;
                 return *this;
             }
-            auto operator*() {
-                return tr->fun(cc);
+            auto operator*() const{
+                return tr->fun(*iter);
             }
 
         private:
-            int cc;
+            Iter iter;
             transform_range *tr;
         };
 
-        iterator begin(){
-            return (*range.begin());
+        auto begin() const{
+            return iterator(range.begin());
         };
 
-        iterator end(){
-            return (*range.end());
+        auto end() const{
+            return iterator(range.end());
         };
 
 private:
@@ -161,9 +151,29 @@ private:
 // operator| ???
 // Q1: input, output type?
 // Q2: how many of operator|?
+template<typename F>
+class transform2 {
+public:
+    transform2(F f): fun(f){}
+
+    template<typename X>
+    auto operator() (X val) const {
+        return fun(val);
+    }
+private:
+    F fun;
+};
+
 template<typename T, typename F>
-auto operator|(T x, const F f) {
+auto operator|(T x, transform2<F> f) {
     return transform_range(x, f);
+}
+
+template<typename F, typename G>
+auto operator|(transform2<F> f,transform2<G> g) {
+    return transform2([=](auto n) {
+        return g(f(n));
+    });
 }
 
 auto square_range(int i){
