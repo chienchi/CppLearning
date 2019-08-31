@@ -16,9 +16,12 @@ TEST_CASE("Range") {
         }
         std::cout << '\n';
     }
- //   SECTION("Test input one number") {
-
-  //  }
+    SECTION("Test input one number") {
+        for(long l : Xrange(5)) {
+            std::cout << l << ' '; // 0 1 2 3 4 5
+        }
+        std::cout << '\n';
+    }
 
     SECTION("Test square_range") {
         for (long l : square_range(5)){
@@ -52,14 +55,18 @@ TEST_CASE("Range") {
         // 0 1 8 27 64
     }
     SECTION("Test pipe transform") {
-        auto square = Xrange(0,5)|transform2( [](int i){return i * i; });
+        auto square = Xrange(0,6)|transform2( [](int i){return i * i; });
 
+        square | print_range ;
+        std::cout << std::endl;
+        //
 
         for (auto i : square | transform2( [](int i){return i * i; })){
-            std::cout << i << " ";
+        //    std::cout << i << " ";
         }
-        std::cout << std::endl;
-        // 0 1 4 9 16
+
+        // std::cout << std::endl;
+        // 0 1 16 81 256 625
     }
 
 
