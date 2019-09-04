@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <cassert>
+#include "./mandelbrot.h"
 // Class Xrange ,
 //Constructor
 // argv: int total count
@@ -166,6 +167,40 @@ public:
 private:
     R range;
 };
+
+template <typename M>
+class print_mandel{
+public:
+    print_mandel(M maxItr):max(maxItr){}
+
+    template<typename X>
+    auto operator() (X itr) const {
+        int xdim = *itr.begin();
+        int ydim = *itr.end() - *itr.begin();
+        for (int y = 0; y < ydim; y++){
+            for (int x = 0; x < xdim; x++) {
+                mandel_pixel m(x, y, xdim, ydim, max);
+                if (m.iterations() == max)
+                    std::cout << "#";
+                else
+                    std::cout << " ";
+            }
+            std::cout << "\n";
+        }
+    }
+private:
+   int max;
+};
+
+template<typename T,typename M>
+auto operator|(T x, print_mandel<M> f) {
+    return f(x);
+}
+
+template<typename T>
+auto operator|(T x, T y) {
+    return Xrange(*x.end(),*x.end() + *y.end());
+}
 
 
 template<typename T, typename O>
