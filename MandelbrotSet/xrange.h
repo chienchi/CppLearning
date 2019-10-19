@@ -227,18 +227,19 @@ auto square_range(int i){
         return x * x;
     });
 }
-
-auto odd_range(int i, int j){
-    return transform_range(Xrange(i/2,j/2),[](int x){
-        return x * 2 + 1;
-    });
-}
-
 auto even_range(int i, int j){
     return transform_range(Xrange(i/2,j/2),[](int x){
         return x * 2 ;
     });
 }
+
+
+auto odd_range(int i, int j) {
+    return transform_range(Xrange(i / 2, j / 2), [](int x) {
+        return x * 2 + 1;
+    });
+}
+
 
 
 
