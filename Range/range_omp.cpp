@@ -7,6 +7,7 @@
 #include <iostream>
 #include <omp.h>
 #include "range_omp.h"
+#include <vector>
 
 auto
 odd_range(int i) {
@@ -44,6 +45,7 @@ public:
 
     template<typename R>
     auto operator()(R range) {
+        #pragma omp parallel for
         for (auto i : range) {
             fun(i);
         }
@@ -199,19 +201,24 @@ main() {
     // computer for this exercise.
     // Note 2. Run your test cases in some larger computer in
     // addition to your laptop. What do you see?
+    std::cout << '\n';
+  //  std::cout << omp_get_max_threads() << std::endl;
 
-    std::cout << omp_get_max_threads() << std::endl;
-#pragma omp parallel for default(none) shared(std::cout)
-    for (auto i : range(15)) {
-        std::cout << i << " " << std::endl;
+/*#pragma omp parallel for default(none) shared(std::cout)
+    for (auto i : range(16)) {
+        std::cout << omp_get_thread_num() << " " << i << " " << std::endl;
     }
+    std::cout << '\n';*/
 
-#pragma omp parallel for default(none) shared(std::cout)
-    for (auto i : even_range(15)) {
-        std::cout << i << " " << std::endl;
-    }
+/*#pragma omp parallel for default(none) shared(std::cout)
+    for (auto i : even_range(12)) {
+        std::cout << omp_get_thread_num() << " " << i << " " << std::endl;
+    }*/
 
     //6.3 even_range(13) | for_each
+
+    range(12) | println;
+
 
     // Exercise 7. Implement the reduce() action that reduce/sum
     // the elements in the range.
