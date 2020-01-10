@@ -10,6 +10,9 @@
 #include <complex>
 using namespace std;
 
+complex<float> c;
+complex<float> k;
+
 class mandel_pixel
 {
 public:
@@ -21,14 +24,23 @@ public:
         c-= complex<float>(1.2 * xdim / ydim + 0.5, 1.2);
         //k = complex<float>(-0.6,0.6);
         k = complex<float>(0.353,0.288);
+        //std::cout << c << " " ;
         iterate();
     }
     int iterations() const { return iter; }
+    void print(){
+        if ( this->iterations() == max_iter){
+            std::cout << "#";
+        }else{
+            std::cout << " ";
+        }
+    }
 
 private:
     void iterate()
     {
         complex<float> z= c;
+        #pragma omp parallel for default(none) shared(z)
         for (; iter < max_iter && norm(z) <= 4.0f; iter++)
             z= z * z + c;
             //z= z * z + k;

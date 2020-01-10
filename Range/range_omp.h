@@ -118,18 +118,32 @@ template<typename R, typename F>
 struct is_range<transform<R, F>> : std::true_type {
 };
 
+template <typename T, typename = void>
+struct is_iterable : std::false_type {};
+template <typename T>
+struct is_iterable<T, std::void_t<decltype(std::declval<T>().begin()),
+        decltype(std::declval<T>().end())>>
+        : std::true_type {};
+
 template<typename L, typename R>
 auto
 operator|(L lhs, R rhs) {
     // is_range<L>::value
     // is_range<L>();
     // is_same<is_range<L>, std::true_type>::value
-    if constexpr (is_range<L>::value) {
+    //if constexpr (is_range<L>::value) {
+    if constexpr(is_iterable<L>::value) {
         return transform(lhs, rhs);
     } else {
         return CompFun(lhs, rhs);
     }
 }
 
+auto rectangle(const std::pair<int,int> &begin, const std::pair<int,int> &end){
+    int width = end.first - begin.first;
+    int height = end.second - begin.second;
+
+    return range(width) | [=](int x){};
+}
 
 #endif //LIVECODING_RANGE_OMP_H

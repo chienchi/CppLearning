@@ -47,6 +47,7 @@ public:
     auto operator()(R range) {
         #pragma omp parallel for
         for (auto i : range) {
+            //#pragma omp critical
             fun(i);
         }
     }
@@ -226,5 +227,11 @@ main() {
     // Exercise 8 (Advanced/optional). Parallelize the reduce()
     // action with OpenMP.
 
-    // Exercise 9 (Pretty advanced, not required). Parallelized actions using CUDA
+
+    // Exercise 9 (Pretty advanced, not required). Parallelized actions using CUDA (warning: not easy)
+
+    // Exercise 10 , see above How can decide if R is a range by the
+    // existence of R::begin()?  Done
+
+    // Exercise 11 What is array of Struct and Struct of Array? How do work with our framework?
 }

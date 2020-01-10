@@ -1,249 +1,178 @@
 //
-// Created by osboxes on 4/12/19.
+// Created by osboxes on 10/18/19.
 //
 
-#ifndef LIVECODING_XRANGE_H
-#define LIVECODING_XRANGE_H
+#ifndef LIVECODING_RANGE_OMP_H
+#define LIVECODING_RANGE_OMP_H
 
-#include <functional>
-#include <cassert>
-#include "./mandelbrot.h"
-// Class Xrange ,
-//Constructor
-// argv: int total count
-//
-//Functions
-// 1. begin, return Xrange_iterator
-// 2. end,  return Xrange_iterator
-//
-//Data: save total count
-//
-// class  Xrange_iterator
-//Constructor
-// argv: ???
-// operator
-// 1. !=
-// 2. ++
-// 3. *   for return value
-//
-//Data: current count
+#include <iostream>
+#include <vector>
 
-class Xrange_iterator{
+class range {
 public:
-    Xrange_iterator(int c, int s): cc(c),step(s){}
+    range(int i)
+            : count(i) {}
 
-    bool operator != (Xrange_iterator &right){
-        return step<0 ? right.cc < cc : right.cc > cc;
-        // this doesn't work if step skip over the _end
-        //return cc != right.cc;
-    }
-    Xrange_iterator &operator++(){
-        cc += step;
-        return *this;
-    }
-    int operator*() const{
-        return cc;
-    }
+    struct iterator {
+        iterator(int i)
+                : i(i) {}
+
+        iterator operator++() {
+            ++i;
+            return *this;
+        }
+
+        int operator-(iterator &right) {
+            return i - right.i;
+        }
+
+        auto operator+=(int step) {
+            i += step;
+            return *this;
+        }
+
+        int operator*() const { return i; }
+
+        bool operator!=(iterator &right) const { return i != right.i; }
+
+        int i;
+    };
+
+    iterator begin() const { return iterator{0}; }
+
+    iterator end() const { return iterator{count}; }
 
 private:
-    int cc;
-    int step;
+    int count;
 };
 
-class Xrange{
-private:
-    int _begin;
-    int _end;
-    int _step;
-
+template<typename R, typename F>
+class transform {
 public:
-    Xrange(int b,int e, int s = 1): _begin(b), _end(e),_step(s) {
-       // assert(s!=0);
-    }
-   // Xrange(int b,int e): _begin(b), _end(e), _step(1) {}
-    Xrange(int e): _begin(0), _end(e), _step(1) {
-       // assert(e>0);
-    }
-    Xrange(): _begin(0), _end(1), _step(1){};
+    transform(R range, F fun)
+            : range(range), fun(fun) {}
 
-    Xrange_iterator begin() const{
-        return {_begin, _step};
-    }
-    Xrange_iterator end() const{
-        return {_end, _step};
-    }
+    template<typename Itr>
+    struct iterator {
+        iterator(Itr i, F fun)
+                : i(i), fun(fun) {}
 
+        iterator operator++() {
+            ++i;
+            return *this;
+        }
+
+        int operator-(iterator &right) {
+            return i - right.i;
+        }
+
+        auto operator+=(int step) {
+            i += step;
+            return *this;
+        }
+
+        auto operator*() const { return fun(*i); }
+
+        bool operator!=(iterator &right) const { return i != right.i; }
+
+        Itr i;
+        F fun;
+    };
+    // For some reason, CLANG needs this deduction guide while
+    // GCC is not happy about it.
+    //  template<class Iter>
+    //  iterator(Iter iter, F)->iterator<Iter>;
+
+    auto begin() const { return iterator{range.begin(), fun}; }
+
+    auto end() const { return iterator{range.end(), fun}; }
+
+private:
+    R range;
+    F fun;
 };
 
-#if 0
-template<typename InputIt, typename UnaryOperation>
-auto transform_range(InputIt inRange,
-                        UnaryOperation unary_op)
-{
-    // 1. change return type int some kind of Range
-    std::vector<int> output;
+template<typename F1, typename F2>
+class CompFun {
+public:
+    CompFun(F1 f1, F2 f2)
+            : fun1(f1), fun2(f2) {}
 
-    // 2. move computation into iterator::operator*()
-    for (auto i : inRange){
-        output.push_back(unary_op(i));
+    auto operator()(int x) const { return fun2(fun1(x)); }
+
+private:
+    F1 fun1;
+    F2 fun2;
+};
+
+// Exercise 10: How can decide if R is a range by the
+// existence of R::begin()?
+template<typename R>
+struct is_range : std::false_type {
+};
+
+template<>
+struct is_range<range> : std::true_type {
+};
+
+template<typename R, typename F>
+struct is_range<transform<R, F>> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct is_iterable : std::false_type {};
+template <typename T>
+struct is_iterable<T, std::void_t<decltype(std::declval<T>().begin()),
+        decltype(std::declval<T>().end())>>
+        : std::true_type {};
+
+template<typename L, typename R>
+auto
+operator|(L lhs, R rhs) {
+    // is_range<L>::value
+    // is_range<L>();
+    // is_same<is_range<L>, std::true_type>::value
+    //if constexpr (is_range<L>::value) {
+    if constexpr(is_iterable<L>::value) {
+        return transform(lhs, rhs);
+    } else {
+        return CompFun(lhs, rhs);
     }
-
-    // 1.5 instead of return from function, construct an object
-    return output;
 }
-
-#else
-template <typename Range, typename Fun>
-class transform_range {
-public:
-        transform_range(Range input_range, Fun f):range(input_range),fun(f){};
-
-        template <typename Iter>
-        class iterator {
-
-        public:
-            iterator(Iter iter): iter(iter){};
-
-            bool operator!=( iterator &right) {
-                return iter != right.iter;
-            }
-
-            iterator &operator++() {
-                ++iter;
-                return *this;
-            }
-            auto operator*() const{
-                return tr->fun(*iter);
-            }
-
-        private:
-            Iter iter;
-            transform_range *tr;
-        };
-
-        auto begin() const{
-            return iterator(range.begin());
-        };
-
-        auto end() const{
-            return iterator(range.end());
-        };
-
-private:
-        Range range;
-        Fun fun;
-        };
-
-
-#endif
-
-// operator| ???
-// Q1: input, output type?
-// Q2: how many of operator|?
 template<typename F>
-class transform2 {
+struct for_each {
 public:
-    transform2(F f): fun(f){}
+    for_each(F fun)
+            : fun(fun) {}
 
-    template<typename X>
-    auto operator() (X val) const {
-        return fun(val);
+    template<typename R>
+    auto operator()(R range) {
+        for (auto i : range) {
+            //#pragma omp critical
+            fun(i);
+        }
     }
+
 private:
     F fun;
 };
 
-template<typename R>
-class print {
-public:
-    print(R r): range(r){}
-
-    template<typename X>
-    auto operator() (X itr) const {
-        for (auto i: itr) {
-            std::cout << i << " ";
-        }
-    }
-private:
-    R range;
-};
-
-template <typename M>
-class print_mandel{
-public:
-    print_mandel(M maxItr):max(maxItr){}
-
-    template<typename X>
-    auto operator() (X itr) const {
-        int xdim = *itr.begin();
-        int ydim = *itr.end() - *itr.begin();
-        for (int y = 0; y < ydim; y++){
-            for (int x = 0; x < xdim; x++) {
-                mandel_pixel m(x, y, xdim, ydim, max);
-                if (m.iterations() == max)
-                    std::cout << "#";
-                else
-                    std::cout << " ";
-            }
-            std::cout << "\n";
-        }
-    }
-private:
-   int max;
-};
-
-template<typename T,typename M>
-auto operator|(T x, print_mandel<M> f) {
-    return f(x);
+template<typename L, typename F>
+auto
+operator|(L lhs, for_each<F> fun) {
+    fun(lhs);
 }
 
-template<typename T>
-auto operator|(T x, T y) {
-    return Xrange(*x.end(),*x.end() + *y.end());
+auto rectangle(const std::pair<int,int> &begin, const std::pair<int,int> &end){
+    int width = end.first - begin.first;
+    int height = end.second - begin.second;
+
+    return range(height*width) | [=](int x){
+        //std::vector<std::pair<int,int>> vec;
+        //for (int i:range(width)) {vec.push_back({x,i});}
+        //return vec;
+        return std::pair<int,int> {x/width, x%width};
+    };
 }
 
-
-template<typename T, typename O>
-auto operator|(T x, print<O> o) {
-    return o(x);
-}
-
-template<typename T, typename F>
-auto operator|(T x, transform2<F> f) {
-    return transform_range(x, f);
-}
-
-template<typename F, typename G>
-auto operator|(transform2<F> f,transform2<G> g) {
-    return transform2([=](auto n) {
-        return g(f(n));
-    });
-}
-
-auto print_range = print([](){});
-
-auto square_range(int i){
-    return transform_range(Xrange(i),[](int x){
-        return x * x;
-    });
-}
-auto even_range(int i, int j){
-    return transform_range(Xrange(i/2,j/2),[](int x){
-        return x * 2 ;
-    });
-}
-
-
-auto odd_range(int i, int j) {
-    return transform_range(Xrange(i / 2, j / 2), [](int x) {
-        return x * 2 + 1;
-    });
-}
-
-
-
-
-
-
-#endif //LIVECODING_XRANGE_H
-
+#endif //LIVECODING_RANGE_OMP_H
