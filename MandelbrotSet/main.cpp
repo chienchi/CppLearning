@@ -21,18 +21,19 @@ int main (int argc, char* argv[]) {
     //auto Juliaset = z_plane | xform([](){ return z*z + k; })
 
    // auto newRange = Xrange(xdim) | Xrange(ydim);
-     auto println = for_each([xdim](auto i) {  i.first == (xdim - 1)? std::cout<<"\n": std::cout << i.second ; });
+
      auto ij = rectangle({0,0},{xdim,ydim});
-     auto z_plane = [&](auto i){
+
+     auto z_plane = [=](auto i){
          complex<float> c (i.second,i.first);
          c*= 2.4f / static_cast<float>(ydim);
          c-= complex<float>(1.2 * xdim / ydim + 0.5, 1.2);
          //store x axis and complex number in pair
         // cout << c << " ";
-         return std::pair<int,complex<float>> {i.second, c};;
+         return std::pair<int,complex<float>> {i.second, c};
      };
 
-     auto mendelbrot = [&](auto c){
+     auto mendelbrot = [=](auto c){
          complex<float> oc = c.second;
          complex<float> z = c.second;
          int iter;
@@ -43,10 +44,14 @@ int main (int argc, char* argv[]) {
          return iter==max_iter? std::pair<int,char> {c.first, '#'}:std::pair<int,char> {c.first,' '};
      };
 
+    auto println = for_each([xdim](auto i) {
+        i.first == (xdim - 1)? std::cout<<"\n": std::cout << i.second ;
+    });
+
     cout << "Mendelbrot" << endl;
     ij | z_plane | mendelbrot | println;
 
-    auto Juliaset = [&](auto c){
+    auto Juliaset = [=](auto c){
         complex<float> z = c.second;
         //complex<float> k(0.353,0.288);
         complex<float> k (-0.6,0.6);
@@ -58,7 +63,7 @@ int main (int argc, char* argv[]) {
         return iter==max_iter? std::pair<int,char> {c.first, '#'}:std::pair<int,char> {c.first,' '};
     };
 
-    cout << "Juliaset" << endl;
+    //cout << "Juliaset" << endl;
     //ij| z_plane | Juliaset | println;
 
      auto z = for_each([=](auto i) {
@@ -73,7 +78,7 @@ int main (int argc, char* argv[]) {
 
      // ij | z;
      //ij | println;
-     for (auto h:ij){
+//     for (auto h:ij){
         // std::cout << h.first << " " << h.second << std::endl;
         // for (auto w:h){
              //mandel_pixel m(w.second,w.first,xdim,ydim,max_iter);
@@ -81,7 +86,7 @@ int main (int argc, char* argv[]) {
              //std::cout << w.first << "," << w.second << " ";
         // }
         // std::cout << std::endl;
-     }
+   //  }
      // auto xy = ij
      //      z=xy
      //              iters=z;
